@@ -1,0 +1,70 @@
+import pandas as pd
+import torch
+import torch.nn as nn
+from torch.autograd import Variable
+from torch.utils.data import Dataset, DataLoader
+class iris_Dataset(Dataset):
+    def __init__(self, dataPath):
+        labeltoint = {
+            'Iris-setosa': 0,
+            'Iris-versicolor': 1,
+            'Iris-virginica': 2
+        }
+        data = pd.read_csv(dataPath)
+        datalist = []
+        for ind in range(len(data)):
+            inputs = data.iloc[ind, 0:4].values
+            label = data.iloc[ind, 4]
+            tup1 = (torch.Tensor(list(inputs)).float(), labeltoint[str(label)])
+            print(tup1)
+            datalist.append(tup1)
+        print(datalist)
+        self.irisData = datalist
+        print(self.irisData)
+    def __len__(self):
+        return len(self.irisData)
+
+    def __getitem__(self, index):
+        inputs, label = self.irisData[index]
+        return inputs, label
+
+
+
+class fnn(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.dense = nn.Sequential()
+        self.dense.add_module('linear1', nn.Linear(4, 100))
+        self.dense.add_module('act1', nn.ReLU())
+        self.dense.add_module('linear4', nn.Linear(100, 3))
+        self.dense.add_module('softmax', nn.Softmax())
+
+
+    def forward(self, x):
+        x = self.dense(x)
+        return x
+
+
+if __name__ == '__main__':
+    irisData = iris_Dataset('iris.data')
+    print(irisData.__len__())
+    irisDataLoader = DataLoader(dataset=irisData, batch_size=149, shuffle=True, drop_last=True)
+    fnn_net = fnn()
+    cost = nn.CrossEntropyLoss()
+    optimzer = torch.optim.SGD(fnn_net.parameters(), lr=0.05)
+
+    for epoch in range(10000):
+        for data_pair in irisDataLoader:
+            data_in, data_out = data_pair
+            data_in, data_out = Variable(data_in), Variable(data_out)
+
+
+            optimzer.zero_grad()
+            model_out = fnn_net(data_in)
+            loss = cost(model_out, data_out)
+            loss.backward()
+            optimzer.step()
+            print(loss)
+            _, prediction = torch.max(model_out, 1)
+            test_correct = (prediction == data_out).sum().item()
+            print(test_correct/149)
