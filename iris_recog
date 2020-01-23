@@ -3,8 +3,18 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 from torch.utils.data import Dataset, DataLoader
+
+
 class iris_Dataset(Dataset):
+    '''
+    创建鸢尾花数据集类，重写三个方法   
+    '''
     def __init__(self, dataPath):
+        '''
+        数据集初始化方法，将csv文件读取转换成（inputs,label）元组形式append进self.irisData，
+        其中inputs需要转换为Tensor
+        :param dataPath: 数据集初始化传入的csv文件路径
+        '''
         labeltoint = {
             'Iris-setosa': 0,
             'Iris-versicolor': 1,
@@ -21,50 +31,73 @@ class iris_Dataset(Dataset):
         print(datalist)
         self.irisData = datalist
         print(self.irisData)
+        
     def __len__(self):
         return len(self.irisData)
 
     def __getitem__(self, index):
+        '''
+        根据索引返回一条记录（inputs,label）
+        :param index: 索引
+        :return: 记录
+        '''
         inputs, label = self.irisData[index]
         return inputs, label
 
 
-
 class fnn(nn.Module):
+    '''
+    创建FNN类
+    '''
     def __init__(self):
         super().__init__()
+        # 创建全连接层
         self.dense = nn.Sequential()
+        # 向全连接层添加神经网络层
         self.dense.add_module('linear1', nn.Linear(4, 100))
         self.dense.add_module('act1', nn.ReLU())
-        self.dense.add_module('linear4', nn.Linear(100, 3))
+        self.dense.add_module('linear2', nn.Linear(100, 3))
         self.dense.add_module('softmax', nn.Softmax())
 
-
     def forward(self, x):
+        # 前向传播
         x = self.dense(x)
         return x
 
 
 if __name__ == '__main__':
     irisData = iris_Dataset('iris.data')
+    # 打印数据条目数
     print(irisData.__len__())
+    # 使用Dataloader加载irisData
     irisDataLoader = DataLoader(dataset=irisData, batch_size=149, shuffle=True, drop_last=True)
     fnn_net = fnn()
+    # 设置损失为交叉熵损失
     cost = nn.CrossEntropyLoss()
+    # 创建优化器，设置优化方法为随机梯度下降，learning rate为0.5
     optimzer = torch.optim.SGD(fnn_net.parameters(), lr=0.05)
-
+    
+    # 开始训练网络，epoch为10000次
     for epoch in range(10000):
+        # 对于每一个epoch，需要遍历整个数据集，data_pair为一个mini_batch
         for data_pair in irisDataLoader:
+            # 拆分inputs和labels
             data_in, data_out = data_pair
+            # 将inputs和labels转为Variable
             data_in, data_out = Variable(data_in), Variable(data_out)
-
-
+            # 优化器梯度清零（每一次迭代都需要清零，因为每次反向传播梯度会叠加）
             optimzer.zero_grad()
+            # 前向传播
             model_out = fnn_net(data_in)
+            # 计算误差
             loss = cost(model_out, data_out)
+            # 误差反向传播
             loss.backward()
+            # 更新网络参数
             optimzer.step()
+            # 打印损失
             print(loss)
+            # 以下为计算准确率
             _, prediction = torch.max(model_out, 1)
             test_correct = (prediction == data_out).sum().item()
             print(test_correct/149)
