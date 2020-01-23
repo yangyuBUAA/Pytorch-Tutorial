@@ -1,2 +1,2 @@
 # Pytorch-Tutorial
-Pytorch笔记
+iris_recog:实现iris数据集类&&创建简单前馈网络&&训练网络
