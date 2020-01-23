@@ -1,2 +1,3 @@
 # Pytorch-Tutorial
 iris_recog:实现iris数据集类&&创建简单前馈网络&&训练网络
+minist_recog:实现对minist数据集的分类，采用pytorch封装好的minist数据集，采用两种网络模型比较，其中FNN收敛快但准确率不高，CNN收敛速度慢但准确率较好，gpu训练部分未写完，目前来看使用cpu训练较慢，训练5个epoch，mini_batch大小为64训练时间大约在1hour。
